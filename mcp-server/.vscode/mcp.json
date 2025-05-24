@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "crud-mcp-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:/Users/tcs/Desktop/VS Code/mcp-weather-server-main/build/index.js"
+      ]
+    }
+  }
+}
