@@ -18,59 +18,35 @@ const server = new McpServer({
 // Create new item
 server.tool(
   "create-file",
-  "Create a file with the given title, description and name",
+  "Create a file with the given content",
   {
-    title: z.string().min(1, { message: "Title is required!" }),
-    description: z
-      .string()
-      .nonempty({ message: "Description is required!" })
-      .refine((value) => value !== "nill", {
-        message: "Description is required!",
-      }),
-    name: z
-      .string()
-      .nonempty({ message: "Title is required!" })
-      .refine((value) => value !== "nill", {
-        message: "Name is required!",
-      }),
+    title: z.string().nonempty("Title is required"),
+    description: z.string().nonempty("Description is required"),
+    name: z.string().nonempty("Name is required"),
   },
-  async ({ title, description, name }) => {
-    // Early return if title is missing or empty
-    if (!title || title.trim() === "") {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: "Error: Title is required! Please provide a title to create the file.",
-          },
-        ],
-      };
-    }
-
-    // Rest of the function code...
+  async ({ title, description, name }, context) => {
     try {
+      const prompt = context._meta?.prompt || "No prompt provided";
+
+      console.log("Received prompt:", prompt);
       // Check for missing fields
-      const missingFields = [];
-      if (!title || title.trim() === "") missingFields.push("title");
-      if (!description || description.trim() === "")
-        missingFields.push("description");
-      if (!name || name.trim() === "") missingFields.push("name");
+      const missingFields: Array<string> = [];
+      if (!name) missingFields.push("name");
+      if (!title) missingFields.push("title");
+      if (!description) missingFields.push("description");
 
       if (missingFields.length > 0) {
-        const missingField = missingFields[0]; // Get the first missing field
-        const message = `I'll help you create a file using the MCP tool f1e_create-file. According to the validation requirements, we need to provide all fields including a ${missingField}.
+        // Create a more conversational message
+        let message = "I noticed you haven't provided ";
 
-As expected, the system is telling us that we need to provide a ${missingField}. The message indicates that the field cannot be empty. You'll need to provide a ${missingField} along with the other information to create the file. Would you like to try again with a ${missingField}?
-
-For example, you can provide the information like this:
-
-Title: ${title || "[please provide a title]"} ${title ? "(✓)" : ""}
-Description: ${description || "[please provide a description]"} ${
-          description ? "(✓)" : ""
+        if (missingFields.length === 1) {
+          message += `the ${missingFields[0]}. Would you like to add it to complete the file creation?`;
+        } else {
+          const lastField = missingFields.pop();
+          message += `${missingFields.join(
+            ", "
+          )} and ${lastField}. Would you like to add these to complete the file creation?`;
         }
-Name: ${name || "[please provide a name]"} ${name ? "(✓)" : ""}
-
-Please provide a ${missingField} and I'll help you create the file with all the required information.`;
 
         return {
           content: [
@@ -81,6 +57,18 @@ Please provide a ${missingField} and I'll help you create the file with all the 
           ],
         };
       }
+
+      // Check if any field is empty after trimming
+      // if (!title.trim() || !description.trim() || !name.trim()) {
+      //   return {
+      //     content: [
+      //       {
+      //         type: "text" as const,
+      //         text: "All fields must contain non-empty values!",
+      //       },
+      //     ],
+      //   };
+      // }
 
       // Generate a userID using part of UUID
       const userId = crypto.randomUUID().slice(0, 16);
